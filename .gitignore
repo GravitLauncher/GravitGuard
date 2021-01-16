@@ -340,7 +340,6 @@ ASALocalRun/
 healthchecksdb
 
 #My project include and libraries
-include/
 lib/
 */ReleaseStatic
 ReleaseStatic

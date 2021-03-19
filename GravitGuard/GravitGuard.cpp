@@ -223,10 +223,7 @@ FARPROC NTAPI getFunctionPtrHook(HMODULE mod, const char* name)
 #ifdef GUARD_WARN_MODE
 			return guard.hooks.getProcAddress->call_original(std::move(mod), std::move(name));
 #else
-#ifdef GUARD_DEBUG_MODE
-			Sleep(5000000);
-#endif
-			return (FARPROC)&blackhole_void;
+			TerminateThread(GetCurrentThread(), 0);
 #endif
 		}
 		checked = true;

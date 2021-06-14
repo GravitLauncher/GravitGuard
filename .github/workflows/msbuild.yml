@@ -33,3 +33,15 @@ jobs:
       # Add additional options to the MSBuild command line here (like platform or verbosity level).
       # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
       run: msbuild /m /p:Configuration=ReleaseStatic /p:Platform=x64 ${{env.SOLUTION_FILE_PATH}} && msbuild /m /p:Configuration=ReleaseStatic /p:Platform=x86 ${{env.SOLUTION_FILE_PATH}}
+    - name: Create artifacts
+      run: |
+          mkdir artifacts
+          copy ReleaseStatic/wrapper32.exe artifacts
+          copy ReleaseStatic/AntiInject32.exe artifacts 
+          copy x64/ReleaseStatic/wrapper64.exe artifacts
+          copy x64/ReleaseStatic/AntiInject64.exe artifacts
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v1
+      with:
+          name: GravitGuardPro
+          path: artifacts

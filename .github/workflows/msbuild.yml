@@ -37,9 +37,10 @@ jobs:
       run: |
           mkdir artifacts
           copy ReleaseStatic/wrapper32.exe artifacts
-          copy ReleaseStatic/AntiInject32.exe artifacts 
+          copy ReleaseStatic/AntiInject32.dll artifacts 
           copy x64/ReleaseStatic/wrapper64.exe artifacts
-          copy x64/ReleaseStatic/AntiInject64.exe artifacts
+          copy x64/ReleaseStatic/AntiInject64.dll artifacts
+          copy README.md artifacts
     - name: Upload artifacts
       uses: actions/upload-artifact@v1
       with:

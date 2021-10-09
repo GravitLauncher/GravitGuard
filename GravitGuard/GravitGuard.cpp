@@ -200,7 +200,7 @@ jclass JNICALL JVM_DefineClassWithSourceHook(JNIEnv* env, const char* name, jobj
 	if (!isCorrectThread)
 	{
 #ifdef GUARD_DEBUG_MODE
-		logger.debug(xorstr_("MagicDefineClass"), (std::stringstream() << xorstr_("Class Name: ") << name << xorstr_(" size ") << len << xorstr_(" source ") << source).str());
+		logger.debug(xorstr_("MagicDefineClass"), (std::stringstream() << xorstr_("Class Name: ") << name << xorstr_(" size ") << len).str());
 #endif
 		guard.checkStacktrace(0);
 		isCorrectThread = true;

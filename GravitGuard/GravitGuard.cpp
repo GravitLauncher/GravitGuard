@@ -162,7 +162,7 @@ NTSTATUS NTAPI LdrLoadDllHook(UINT32 Flags, PUINT32 Reserved, PUNICODE_STRING Mo
 		logger.crash(xorstr_("LdrLoadDll"), xorstr_("Stacktrace check failed. Interrupt"));
 		logger.flush();
 #ifdef GUARD_WARN_MODE
-		goto LdrLoadDllOriginal;
+		goto ldrLoadDllOriginal;
 #else
 		return 0;
 #endif

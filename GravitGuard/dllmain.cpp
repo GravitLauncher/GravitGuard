@@ -3,9 +3,10 @@
 #include "Config.h"
 #include "Logger.h"
 #include "xorstr.h"
-// Force NVIDIA enable
+// Force NVIDIA/AMD enable
 extern "C" {
 	_declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
+	__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 }
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,

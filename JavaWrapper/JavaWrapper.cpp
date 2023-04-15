@@ -7,6 +7,12 @@
 #include "jni.h"
 #include <windows.h>
 #include "LoggerWrapper.h"
+
+// Force NVIDIA/AMD enable
+extern "C" {
+	_declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
+	__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+}
 std::string get_env(LPCSTR s)
 {
 	std::string appdata(1024, 'X');

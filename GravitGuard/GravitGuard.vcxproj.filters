@@ -48,9 +48,6 @@
     <ClInclude Include="Logger.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="..\JavaWrapper\LoggerWrapper.h">
-      <Filter>Файлы заголовков\Public</Filter>
-    </ClInclude>
     <ClInclude Include="jvm_private_export.h">
       <Filter>Файлы заголовков\Private</Filter>
     </ClInclude>
@@ -65,6 +62,9 @@
     </ClInclude>
     <ClInclude Include="xorstr.h">
       <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="..\JavaWrapper\LoggerWrapper.h">
+      <Filter>Файлы заголовков\Public</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

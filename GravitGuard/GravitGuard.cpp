@@ -100,7 +100,12 @@ GravitGuard::CheckResult GravitGuard::checkStacktrace(unsigned int flags)
 	bool anyModuleFound = false;
 	bool unknownMemoryRegion = false;
 	bool lastUnknownMemoryRegion = true;
-	unsigned short captured = getStackTrace(1, 1024, ptrs, NULL);
+	unsigned short captured;
+	int max = 128;
+	do {
+		captured = getStackTrace(1, 1024, ptrs, NULL);
+		max--;
+	} while (captured == 0 && max > 0);
 	for (int i = 0; i < captured; ++i)
 	{
 		module_t mod = getModuleByAddress(ptrs[i]);

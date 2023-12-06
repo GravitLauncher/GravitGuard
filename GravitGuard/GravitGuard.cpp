@@ -96,7 +96,7 @@ void GravitGuard::jvmCreated(void* jvm_ptr, void* jvm_env)
 
 GravitGuard::CheckResult GravitGuard::checkStacktrace(unsigned int flags)
 {
-	thread_local void* ptrs[1024];
+	void* ptrs[1024];
 	bool anyModuleFound = false;
 	bool unknownMemoryRegion = false;
 	bool lastUnknownMemoryRegion = true;
@@ -232,11 +232,11 @@ FARPROC NTAPI getFunctionPtrHook(HMODULE mod, const char* name)
 }
 void GuardHooks::init()
 {
+	thread_local bool initializeThreadLocal = false;
+	initializeThreadLocal = true;
 	GuardLibraryDefines::LdrLoadDll ldrLoadDllPtr = guard.getFunction< GuardLibraryDefines::LdrLoadDll>(xorstr_("ntdll.dll"), xorstr_("LdrLoadDll"));
 	ldrLoadDll = new GuardDetour<GuardLibraryDefines::LdrLoadDll>(ldrLoadDllPtr, &LdrLoadDllHook);
 	ldrLoadDll->hook();
-	getProcAddress = new GuardDetour<decltype(&GetProcAddress)>(guard.getFunctionPtr, &getFunctionPtrHook);
-	getProcAddress->hook();
 }
 
 void GuardHooks::postJVMCreated(JavaVM* jvmPtr, JNIEnv* env, jvmtiEnv* env_ti)
@@ -258,6 +258,8 @@ void GuardHooks::postJVMCreated(JavaVM* jvmPtr, JNIEnv* env, jvmtiEnv* env_ti)
 		magicDefineClass = new GuardDetour<jclass(JNICALL *)(JNIEnv*, const char*, jobject, const jbyte*, jsize, jobject, const char*)>(jvm_defineClassPtr, &JVM_DefineClassWithSourceHook);
 		magicDefineClass->hook();
 	}
+	getProcAddress = new GuardDetour<decltype(&GetProcAddress)>(guard.getFunctionPtr, &getFunctionPtrHook);
+	getProcAddress->hook();
 }
 
 GuardHooks::~GuardHooks()

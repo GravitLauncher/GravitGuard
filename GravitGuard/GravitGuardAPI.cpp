@@ -83,7 +83,7 @@ decltype(GravitGuardAPI::licenseData) getLicenseData()
 }
 void GUARD_EXPORT initGuard()
 {
-	//TODO: Переделать
+	//TODO: пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 	apiTable.write(1, &getGuardAPI0);
 	apiTable.write(2, &getInit);
 	apiTable.write(3, &getLog);

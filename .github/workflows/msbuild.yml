@@ -32,14 +32,14 @@ jobs:
       working-directory: ${{env.GITHUB_WORKSPACE}}
       # Add additional options to the MSBuild command line here (like platform or verbosity level).
       # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
-      run: msbuild /m /p:Configuration=ReleaseStatic /p:Platform=x64 ${{env.SOLUTION_FILE_PATH}} && msbuild /m /p:Configuration=ReleaseStatic /p:Platform=x86 ${{env.SOLUTION_FILE_PATH}}
+      run: msbuild /m /p:Configuration=Release /p:Platform=x64 ${{env.SOLUTION_FILE_PATH}} && msbuild /m /p:Configuration=Release /p:Platform=x86 ${{env.SOLUTION_FILE_PATH}}
     - name: Create artifacts
       run: |
           mkdir artifacts
-          copy ReleaseStatic/wrapper32.exe artifacts
-          copy ReleaseStatic/AntiInject32.dll artifacts 
-          copy x64/ReleaseStatic/wrapper64.exe artifacts
-          copy x64/ReleaseStatic/AntiInject64.dll artifacts
+          copy Release/wrapper32.exe artifacts
+          copy Release/AntiInject32.dll artifacts 
+          copy x64/Release/wrapper64.exe artifacts
+          copy x64/Release/AntiInject64.dll artifacts
           copy README.md artifacts
     - name: Upload artifacts
       uses: actions/upload-artifact@v1

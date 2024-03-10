@@ -4,6 +4,8 @@
 class Logger
 {
 public:
+	Logger();
+	~Logger();
 	enum class Level {
 		TRACE, DEBUG, INFO, CRITICAL
 	};
@@ -11,6 +13,7 @@ public:
 	void log(Level level, const std::format_string<T...> _Fmt,T... _Args);
 	template<class... T>
 	void log(Level level, const std::wformat_string<T...> _Fmt, T... _Args);
+	std::string toUtf8(std::wstring_view wstr);
 private:
 	void log(std::string_view str);
 	void log(std::wstring_view str);

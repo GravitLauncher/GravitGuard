@@ -127,6 +127,7 @@ GravitGuard::CheckResultAll GravitGuard::check(DLLSource source)
 #endif
 	bool isOk = false;
 	bool found_unknown_module = false;
+	bool suspect = false;
 	for (int i = 0; i < n; i++) {
 		StackTraceElement el;
 		el.address = buf[i];
@@ -146,10 +147,19 @@ GravitGuard::CheckResultAll GravitGuard::check(DLLSource source)
 			el.fileName = getModuleFileName(module);
 			el.source = getSource(el.fileName);
 			if (!is_known_module(el.fileName)) {
-				if (el.source != DLLSource::SYSTEM) {
-					found_unknown_module = true;
+				std::wstring_view view = el.fileName;
+				if (el.source == DLLSource::SYSTEM) {
+					if (view.ends_with(L"\\ucrtbase.dll")) { // ucrtbase.dll injected by system without LdrLoadDll
+						gg->add_known_module(el.fileName);
+					}
+					else {
+						//suspect = true;
+					}
 				}
-				this_element_in_unknown_module = true;
+				else {
+					found_unknown_module = true;
+					this_element_in_unknown_module = true;
+				}
 			}
 			if (!is_win_internal_module(module)) {
 				isOk = true;
@@ -169,6 +179,9 @@ GravitGuard::CheckResultAll GravitGuard::check(DLLSource source)
 		return CheckResultAll{ CheckResult::TERMINATE_APP };
 	}
 	if (isOk) {
+		if (suspect) {
+			return CheckResultAll{ CheckResult::ONLY_SIGNED };
+		}
 		return CheckResultAll{ CheckResult::PASS };
 	}
 	else {

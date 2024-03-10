@@ -41,18 +41,46 @@ inline void checkTerminateActions(GravitGuard::CheckResultAll result) {
 
 NTSTATUS NTAPI LdrLoadDllHook(UINT32 Flags, PUINT32 Reserved, PUNICODE_STRING ModuleFileName, PHANDLE ModuleHandle) {
 	std::wstring_view fileName(ModuleFileName->Buffer, ModuleFileName->Length/2);
+#ifdef ENABLE_DLL_THREAD_LOCAL_OPTIMIZATION
+	thread_local std::vector<std::wstring> checked;
+	for (auto l : checked) {
+		if (l == fileName) {
+			return ldrLoadDllHook->call_original(std::move(Flags), std::move(Reserved), std::move(ModuleFileName), std::move(ModuleHandle));
+		}
+	}
+#endif
 	logger.log(Logger::Level::DEBUG, L"LdrLoadDll {}", fileName);
 	auto source = gg->getSource(fileName);
 	auto result = gg->check(source);
 	checkTerminateActions(result);
 	if (result.result == GravitGuard::CheckResult::CANCEL) {
+		logger.log(Logger::Level::CRITICAL, L"LdrLoadDll {} cancelled", fileName);
 		return -1;
 	}
 	if (result.result == GravitGuard::CheckResult::ONLY_SIGNED) {
+		logger.log(Logger::Level::CRITICAL, L"LdrLoadDll {} only signed", fileName);
 		Flags |= LOAD_LIBRARY_REQUIRE_SIGNED_TARGET;
 	}
-	gg->add_known_module(fileName);
-	return ldrLoadDllHook->call_original(std::move(Flags), std::move(Reserved), std::move(ModuleFileName), std::move(ModuleHandle));
+	if (!gg->is_known_module(fileName)) {
+		gg->add_known_module(fileName);
+	}
+	auto retCode = ldrLoadDllHook->call_original(std::move(Flags), std::move(Reserved), std::move(ModuleFileName), std::move(ModuleHandle));
+	if (NT_SUCCESS(retCode)) {
+		auto realModuleFileName = gg->getModuleFileName(*((HMODULE*)ModuleHandle));
+		if (fileName != realModuleFileName) {
+			logger.log(Logger::Level::DEBUG, L"Found module {}: {}", fileName, realModuleFileName);
+			if (!gg->is_known_module(realModuleFileName)) {
+				gg->add_known_module(realModuleFileName);
+			}
+		}
+#ifdef ENABLE_DLL_THREAD_LOCAL_OPTIMIZATION
+		checked.push_back(std::wstring(fileName));
+#endif
+	}
+	else {
+		logger.log(Logger::Level::DEBUG, L"Fail to load module {}", fileName);
+	}
+	return retCode;
 }
 
 NTSTATUS NTAPI LdrpLoadDllHook(BOOLEAN Redirected, PWSTR DllPath, PULONG DllCharacteristics, PUNICODE_STRING DllName, PVOID* BaseAddress, BOOLEAN CallInit) {

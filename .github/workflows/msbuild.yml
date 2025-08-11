@@ -16,8 +16,8 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-java@v2
+    - uses: actions/checkout@v4
+    - uses: actions/setup-java@v4
       with:
        distribution: 'adopt' # See 'Supported distributions' for available options
        java-version: '11'
@@ -42,7 +42,7 @@ jobs:
           copy x64/Release/AntiInject64.dll artifacts
           copy README.md artifacts
     - name: Upload artifacts
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v2
       with:
           name: GravitGuardPro
           path: artifacts

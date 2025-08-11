@@ -38,4 +38,5 @@ GravitGuard* gg;
 
 void protectMain(std::wstring java_home) {
 	gg = new GravitGuard(java_home);
+	gg->initHooks();
 }

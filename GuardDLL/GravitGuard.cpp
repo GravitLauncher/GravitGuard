@@ -5,6 +5,8 @@
 #include <iostream>
 #include "Logger.h"
 
+thread_local bool is_thread_verified = false;
+
 void blackhole_none() {
 
 }
@@ -55,9 +57,9 @@ GravitGuard::GravitGuard(std::wstring java_home) : java_home(java_home)
 		auto success = GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)&blackhole_none, &self_module);
 	}
 	known_modules_mutex = new std::mutex();
-	initHooks();
 }
-thread_local int trusted_context = 0;
+thread_local volatile int trusted_context = 0;
+
 inline bool GravitGuard::is_trusted_context()
 {
 	return trusted_context > 0;
@@ -71,6 +73,16 @@ void GravitGuard::enter_trusted_context()
 void GravitGuard::exit_trusted_context()
 {
 	trusted_context--;
+}
+
+bool GravitGuard::is_curent_thread_verified()
+{
+	return is_thread_verified;
+}
+
+void GravitGuard::mark_current_thread_verified(bool value)
+{
+	is_thread_verified = value;
 }
 
 std::optional<std::string> GravitGuard::get_env(std::string_view name)
@@ -117,7 +129,7 @@ GravitGuard::CheckResultAll GravitGuard::check(DLLSource source)
 	if (is_trusted_context()) {
 		return CheckResultAll{ CheckResult::PASS };
 	}
-	TrustedContextLock _l();
+	TrustedContextLock _l;
 	auto n = captureStackTrace(buf, 1024, &hash);
 	if (n <= 0) {
 		return CheckResultAll{ CheckResult::CANCEL };
@@ -246,12 +258,12 @@ void GravitGuard::add_known_module(std::wstring_view module)
 	known_modules_mutex->unlock();
 }
 
-inline TrustedContextLock::TrustedContextLock()
+TrustedContextLock::TrustedContextLock()
 {
-	trusted_context++;
+	gg->enter_trusted_context();
 }
 
-inline TrustedContextLock::~TrustedContextLock()
+TrustedContextLock::~TrustedContextLock()
 {
-	trusted_context--;
+	gg->exit_trusted_context();
 }

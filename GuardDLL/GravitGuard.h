@@ -5,13 +5,11 @@
 #include <optional>
 #include <list>
 #include <mutex>
-#define GUARD_DEBUG
 class GravitGuard
 {
 private:
 	decltype(&GetProcAddress) getProcAddress;
 	decltype(&GetModuleHandleExW) getModuleHandleEx;
-	void initHooks();
 	HMODULE module_ntdll;
 	HMODULE module_kernel32;
 	HMODULE module_kernelbase;
@@ -29,9 +27,12 @@ public:
 	T getAddress(HMODULE module, const char* lpProcName);
 	template<typename T>
 	T getAddress(HMODULE module, char* lpProcName);
+	void initHooks();
 	inline bool is_trusted_context();
 	void enter_trusted_context();
 	void exit_trusted_context();
+	bool is_curent_thread_verified();
+	void mark_current_thread_verified(bool value);
 	std::optional<std::string> get_env(std::string_view name);
 	enum class CheckResult {
 		PASS, ONLY_SIGNED, CANCEL, INFINITE_SLEEP, TERMINATE_THREAD, TERMINATE_APP
@@ -71,8 +72,9 @@ public:
 
 class TrustedContextLock
 {
-	inline TrustedContextLock();
-	inline ~TrustedContextLock();
+public:
+	TrustedContextLock();
+	~TrustedContextLock();
 };
 
 

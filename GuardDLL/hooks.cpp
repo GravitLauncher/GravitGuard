@@ -18,10 +18,17 @@ GuardDetour<decltype(&LoadLibraryA)>* loadLibraryAHook = nullptr;
 GuardDetour<decltype(JNIInvokeInterface_::GetEnv)>* getEnvHook = nullptr;
 GuardDetour<decltype(JNIInvokeInterface_::AttachCurrentThread)>* attachCurrentThreadHook = nullptr;
 GuardDetour<decltype(JNIInvokeInterface_::AttachCurrentThreadAsDaemon)>* attachCurrentThreadAsDaemonHook = nullptr;
+GuardDetour<decltype(&GetProcAddress)>* getProcAddressHook = nullptr;
+GuardDetour<decltype(&VirtualProtectEx)>* virtualProtectExHook = nullptr;
+GuardDetour<decltype(&VirtualProtect)>* virtualProtectHook = nullptr;
 
 volatile void* always_null = NULL;
 inline void makesegfault() {
 	always_null = (void*) 0xDEADDEAD;
+}
+
+void blackhole_function() {
+
 }
 
 inline void checkTerminateActions(GravitGuard::CheckResultAll result) {
@@ -157,11 +164,83 @@ jint JNICALL AttachCurrentThreadAsDaemonHook(JavaVM* vm, void** penv, void* args
 	return attachCurrentThreadAsDaemonHook->call_original(std::move(vm), std::move(penv), std::move(args));
 }
 
+FARPROC
+WINAPI
+GetProcAddressHook(
+	_In_ HMODULE hModule,
+	_In_ LPCSTR lpProcName
+) {
+	if (!gg->is_curent_thread_verified() && !gg->is_trusted_context()) {
+		auto source = GravitGuard::DLLSource::UNKNOWN_MEMORY;
+		auto result = gg->check(source);
+		checkTerminateActions(result);
+		if (result.result == GravitGuard::CheckResult::CANCEL || result.result == GravitGuard::CheckResult::ONLY_SIGNED) {
+			return (FARPROC) &blackhole_function;
+		}
+		if (!gg->is_trusted_context()) {
+			gg->mark_current_thread_verified(true);
+		}
+	}
+	return getProcAddressHook->call_original(std::move(hModule), std::move(lpProcName));
+}
+
+BOOL
+WINAPI
+VirtualProtectExHook(
+	_In_ HANDLE hProcess,
+	_In_ LPVOID lpAddress,
+	_In_ SIZE_T dwSize,
+	_In_ DWORD flNewProtect,
+	PDWORD lpflOldProtect
+) {
+	if (!gg->is_curent_thread_verified() && !gg->is_trusted_context() && ((flNewProtect & (PAGE_EXECUTE_READWRITE)) != 0) || ((flNewProtect & (PAGE_EXECUTE)) != 0) || ((flNewProtect & (PAGE_EXECUTE_READ)) != 0)) {
+		auto source = GravitGuard::DLLSource::UNKNOWN_MEMORY;
+		auto result = gg->check(source);
+		checkTerminateActions(result);
+		if (result.result == GravitGuard::CheckResult::CANCEL || result.result == GravitGuard::CheckResult::ONLY_SIGNED) {
+			return TRUE;
+		}
+		if (!gg->is_trusted_context()) {
+			gg->mark_current_thread_verified(true);
+		}
+	}
+	return virtualProtectExHook->call_original(std::move(hProcess), std::move(lpAddress), std::move(dwSize), std::move(flNewProtect), std::move(lpflOldProtect));
+}
+
+BOOL
+WINAPI
+VirtualProtectHook(
+	_In_  LPVOID lpAddress,
+	_In_  SIZE_T dwSize,
+	_In_  DWORD flNewProtect,
+	PDWORD lpflOldProtect
+) {
+	if (!gg->is_curent_thread_verified() && !gg->is_trusted_context() && ((flNewProtect & (PAGE_EXECUTE_READWRITE)) != 0) || ((flNewProtect & (PAGE_EXECUTE)) != 0) || ((flNewProtect & (PAGE_EXECUTE_READ)) != 0)) {
+		auto source = GravitGuard::DLLSource::UNKNOWN_MEMORY;
+		auto result = gg->check(source);
+		checkTerminateActions(result);
+		if (result.result == GravitGuard::CheckResult::CANCEL || result.result == GravitGuard::CheckResult::ONLY_SIGNED) {
+			return TRUE;
+		}
+		if (!gg->is_trusted_context()) {
+			gg->mark_current_thread_verified(true);
+		}
+	}
+	return virtualProtectHook->call_original(std::move(lpAddress), std::move(dwSize), std::move(flNewProtect), std::move(lpflOldProtect));
+}
+
 void GravitGuard::initHooks()
 {
+	TrustedContextLock _l;
 	auto originalLdrLoadDll = getAddress<GuardLibraryDefines::LdrLoadDll*>(module_ntdll, xorstr_("LdrLoadDll"));
 	ldrLoadDllHook = new GuardDetour<GuardLibraryDefines::LdrLoadDll*>(originalLdrLoadDll, &LdrLoadDllHook);
 	ldrLoadDllHook->hook();
+	getProcAddressHook = new GuardDetour<decltype(&GetProcAddress)>(&GetProcAddress, &GetProcAddressHook);
+	getProcAddressHook->hook();
+	virtualProtectHook = new GuardDetour<decltype(&VirtualProtect)>(&VirtualProtect, &VirtualProtectHook);
+	virtualProtectHook->hook();
+	virtualProtectExHook = new GuardDetour<decltype(&VirtualProtectEx)>(&VirtualProtectEx, &VirtualProtectExHook);
+	virtualProtectExHook->hook();
 	//auto originalLdrpLoadDll = getAddress<GuardLibraryDefines::LdrpLoadDll*>(module_kernelbase, xorstr_("LdrpLoadDll"));
 	//ldrpLoadDllHook = new GuardDetour<GuardLibraryDefines::LdrpLoadDll*>(originalLdrpLoadDll, &LdrpLoadDllHook);
 	//ldrpLoadDllHook->hook();
@@ -187,6 +266,7 @@ void GravitGuard::initHooks()
 }
 
 JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM* jvm, char* options, void* reserved) {
+	TrustedContextLock _l;
 	getEnvHook = new GuardDetour<decltype(JNIInvokeInterface_::GetEnv)>(jvm->functions->GetEnv, &GetEnvHook);
 	getEnvHook->hook();
 	attachCurrentThreadHook = new GuardDetour<decltype(JNIInvokeInterface_::AttachCurrentThread)>(jvm->functions->AttachCurrentThread, &AttachCurrentThreadHook);

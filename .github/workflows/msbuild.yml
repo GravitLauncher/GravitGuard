@@ -42,7 +42,7 @@ jobs:
           copy x64/Release/AntiInject64.dll artifacts
           copy README.md artifacts
     - name: Upload artifacts
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
           name: GravitGuardPro
           path: artifacts

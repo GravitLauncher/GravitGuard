@@ -10,7 +10,9 @@ GUARD_EXPORT void run_java(std::wstring javaPath, int argc, const char** argv) {
 	protectMain(javaPath);
 	gg->enter_trusted_context();
 	std::wstring jliDllPath = javaPath + xorstr_(L"\\bin\\jli.dll");
+	std::wstring jliSearchPath = javaPath + xorstr_(L"\\bin");
     HMODULE jliDll = LoadLibraryW(jliDllPath.c_str());
+	AddDllDirectory(jliSearchPath.c_str());
 	auto jliLaunch = gg->getAddress<decltype(&JLI_Launch)>(jliDll, xorstr_("JLI_Launch"));
 	auto jliCmdToArgs = gg->getAddress<decltype(&JLI_CmdToArgs)>(jliDll, xorstr_("JLI_CmdToArgs"));
 	auto jliGetArgc = gg->getAddress<decltype(&JLI_GetStdArgc)>(jliDll, xorstr_("JLI_GetStdArgc"));
